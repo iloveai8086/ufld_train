@@ -15,7 +15,7 @@ if __name__ == "__main__":
     args, cfg = merge_config()
 
     dist_print('start testing...')
-    assert cfg.backbone in ['18','34','50','101','152','50next','101next','50wide','101wide']
+    assert cfg.backbone in ['18', '34', '50', '101', '152', '50next', '101next', '50wide', '101wide']
 
     if cfg.dataset == 'CULane':
         cls_num_per_lane = 18
@@ -24,8 +24,8 @@ if __name__ == "__main__":
     else:
         raise NotImplementedError
 
-    net = parsingNet(pretrained = False, backbone=cfg.backbone,cls_dim = (cfg.griding_num+1,cls_num_per_lane,4),
-                    use_aux=False).cuda() # we dont need auxiliary segmentation in testing
+    net = parsingNet(pretrained=False, backbone=cfg.backbone, cls_dim=(cfg.griding_num + 1, cls_num_per_lane, 4),
+                     use_aux=False).cuda()  # we dont need auxiliary segmentation in testing
 
     state_dict = torch.load(cfg.test_model, map_location='cpu')['model']
     compatible_state_dict = {}
@@ -44,31 +44,34 @@ if __name__ == "__main__":
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
     if cfg.dataset == 'CULane':
-        splits = ['test0_normal.txt', 'test1_crowd.txt', 'test2_hlight.txt', 'test3_shadow.txt', 'test4_noline.txt', 'test5_arrow.txt', 'test6_curve.txt', 'test7_cross.txt', 'test8_night.txt']
-        datasets = [LaneTestDataset(cfg.data_root,os.path.join(cfg.data_root, 'list/test_split/'+split),img_transform = img_transforms) for split in splits]
-        img_w, img_h = 1640, 590
+        splits = ['test.txt']
+        datasets = [
+            LaneTestDataset(cfg.data_root, os.path.join(cfg.data_root, 'list/' + split), img_transform=img_transforms)
+            for split in splits]
+        img_w, img_h = 1920, 1080
         row_anchor = culane_row_anchor
     elif cfg.dataset == 'Tusimple':
         splits = ['test.txt']
-        datasets = [LaneTestDataset(cfg.data_root,os.path.join(cfg.data_root, split),img_transform = img_transforms) for split in splits]
+        datasets = [LaneTestDataset(cfg.data_root, os.path.join(cfg.data_root, split), img_transform=img_transforms) for
+                    split in splits]
         img_w, img_h = 1280, 720
         row_anchor = tusimple_row_anchor
     else:
         raise NotImplementedError
     for split, dataset in zip(splits, datasets):
-        loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle = False, num_workers=1)
+        loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=1)
         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-        print(split[:-3]+'avi')
-        vout = cv2.VideoWriter(split[:-3]+'avi', fourcc , 30.0, (img_w, img_h))
+        print(split[:-3] + 'avi')
+        vout = cv2.VideoWriter(split[:-3] + 'avi', fourcc, 10.0, (img_w, img_h))
         for i, data in enumerate(tqdm.tqdm(loader)):
             imgs, names = data
+            # print(data)
             imgs = imgs.cuda()
             with torch.no_grad():
                 out = net(imgs)
 
             col_sample = np.linspace(0, 800 - 1, cfg.griding_num)
             col_sample_w = col_sample[1] - col_sample[0]
-
 
             out_j = out[0].data.cpu().numpy()
             out_j = out_j[:, ::-1, :]
@@ -79,15 +82,20 @@ if __name__ == "__main__":
             out_j = np.argmax(out_j, axis=0)
             loc[out_j == cfg.griding_num] = 0
             out_j = loc
-
+            print(out_j)
+            # print(loc)
+            # print(out_j)
             # import pdb; pdb.set_trace()
-            vis = cv2.imread(os.path.join(cfg.data_root,names[0]))
+            # vis = cv2.imdecode(np.fromfile(os.path.join(cfg.data_root, names[0]), dtype=np.uint8),
+            #                    cv2.IMREAD_COLOR)  # 图像读取 （1080，1920，3）
+            vis = cv2.imread(os.path.join(cfg.data_root, names[0]))
             for i in range(out_j.shape[1]):
                 if np.sum(out_j[:, i] != 0) > 2:
                     for k in range(out_j.shape[0]):
                         if out_j[k, i] > 0:
-                            ppp = (int(out_j[k, i] * col_sample_w * img_w / 800) - 1, int(img_h * (row_anchor[cls_num_per_lane-1-k]/288)) - 1 )
-                            cv2.circle(vis,ppp,5,(0,255,0),-1)
+                            ppp = (int(out_j[k, i] * col_sample_w * img_w / 800) - 1,
+                                   int(img_h * (row_anchor[cls_num_per_lane - 1 - k] / 288)) - 1)
+                            cv2.circle(vis, ppp, 5, (0, 0, 255), -1)
             vout.write(vis)
-        
+
         vout.release()

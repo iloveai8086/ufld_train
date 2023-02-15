@@ -1,10 +1,10 @@
 # DATA
-dataset = 'Tusimple'  # my   Tusimple
-data_root = "/media/ros/A666B94D66B91F4D/ros/test_port/Labelme2Culane/gen3"
+dataset = 'Tusimple'
+data_root = "/home/ai/luis/tusimple/dataset"
 
 # TRAIN
 epoch = 100
-batch_size = 16
+batch_size = 32
 optimizer = 'Adam'  # ['SGD','Adam']
 # learning_rate = 0.1
 learning_rate = 4e-4
@@ -23,13 +23,13 @@ griding_num = 100
 use_aux = True
 
 # LOSS
-sim_loss_w = 0.0
+sim_loss_w = 1.0
 shp_loss_w = 0.0
 
 # EXP
 note = ''
 
-log_path = "/media/ros/A666B94D66B91F4D/ros/test_port/Labelme2Culane/gen3/logs"
+log_path = "/home/ai/luis/tusimple/logs"
 
 # FINETUNE or RESUME MODEL PATH
 finetune = None

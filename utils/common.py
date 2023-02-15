@@ -65,6 +65,7 @@ def merge_config():
 
 def save_model(net, optimizer, epoch,save_path, distributed):
     if is_main_process():
+        
         model_state_dict = net.state_dict()
         state = {'model': model_state_dict, 'optimizer': optimizer.state_dict()}
         # state = {'model': model_state_dict}
@@ -104,6 +105,8 @@ import datetime, os
 def get_work_dir(cfg):
     now = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     hyper_param_str = '_lr_%1.0e_b_%d' % (cfg.learning_rate, cfg.batch_size)
+    print(cfg.log_path)
+    print(now + hyper_param_str + cfg.note)
     work_dir = os.path.join(cfg.log_path, now + hyper_param_str + cfg.note)
     return work_dir
 
